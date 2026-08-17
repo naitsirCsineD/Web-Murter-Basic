@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablas Catastrales - Murter Betina</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --panel: #ffffff;
+      --panel-alt: #f8f8f8;
+      --ink: #1e2a33;
+      --muted: #5d6973;
+      --line: #d5d9dd;
+      --dark: #1d2d3a;
+      --dark-soft: #2d4254;
+      --primary: #274d6d;
+      --primary-soft: #dfeaf3;
+      --danger: #7a3d3d;
+      --danger-soft: #f6e5e5;
+      --success: #2a5f4a;
+      --success-soft: #e3f0ea;
+      --warning: #7e6a2d;
+      --warning-soft: #f6f1de;
+      --shadow: 0 2px 8px rgba(15, 25, 35, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .page-header {
+      background: linear-gradient(180deg, var(--dark) 0%, var(--dark-soft) 100%);
+      color: #fff;
+      padding: 32px 28px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .header-inner {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    .page-header .eyebrow {
+      margin: 0;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .page-header h1 {
+      margin: 8px 0 0;
+      font-size: clamp(2rem, 3vw, 3rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .page-header .subtitle {
+      margin: 10px 0 0;
+      font-size: 1.05rem;
+      opacity: 0.9;
+    }
+
+    .page-header .country {
+      margin: 6px 0 0;
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+
+    .page-shell {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 26px 18px 40px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .tool-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tool-group label {
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 0.92rem;
+    }
+
+    .tool-group input,
+    .tool-group select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.98rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: clamp(1.3rem, 2vw, 2rem);
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .table-container {
+      margin-bottom: 32px;
+      background-color: var(--panel);
+      padding: 18px 18px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .description {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 8px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 8px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background-color: #edf2f5;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    td:nth-child(3) {
+      text-align: left;
+    }
+
+    .parcel-cell {
+      font-weight: 700;
+    }
+
+    .parcel-button {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: var(--primary);
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .total-row {
+      font-weight: 700;
+      background-color: var(--panel-alt);
+    }
+
+    .action-cell {
+      min-width: 195px;
+      background-color: #f9fafb;
+    }
+
+    .action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .action-btn {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .action-btn.primary {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: rgba(39, 77, 109, 0.2);
+    }
+
+    .action-btn.primary:not(:disabled):hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .action-btn.success {
+      background: var(--success-soft);
+      color: var(--success);
+      border-color: rgba(42, 95, 74, 0.2);
+    }
+
+    .action-btn.success:not(:disabled):hover {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .action-btn.warning {
+      background: var(--warning-soft);
+      color: var(--warning);
+      border-color: rgba(126, 106, 45, 0.2);
+    }
+
+    .action-btn.warning:not(:disabled):hover {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    .action-btn.secondary {
+      background: #eef3f6;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .action-btn.secondary:not(:disabled):hover {
+      background: #e3eaef;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 20, 26, 0.5);
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal.visible {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(620px, 100%);
+      background: var(--panel);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      background: var(--dark);
+      color: #fff;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.7rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 18px 20px 22px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .info-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .info-label {
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .info-value {
+      word-break: break-word;
+    }
+
+    .info-value a {
+      color: var(--primary);
+      word-break: break-all;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        margin: 0;
+      }
+
+      .page-header {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .page-shell {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .table-container {
+        padding: 12px 8px 10px;
+      }
+
+      .info-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="header-inner">
+      <p class="eyebrow">República de Croacia</p>
+      <h1>CATASTRO MURTER BETINA</h1>
+      <p class="subtitle">Consulta y acceso a información catastral</p>
+      <p class="country">República de Croacia</p>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="toolbar" aria-label="Controles de búsqueda y filtros">
+      <div class="tool-group">
+        <label for="searchInput">Buscar parcela</label>
+        <input id="searchInput" type="search" placeholder="Ej.: 22357/4" autocomplete="off">
+      </div>
+
+      <div class="tool-group">
+        <label for="filtroZkul">Registro de propiedad</label>
+        <select id="filtroZkul">
+          <option value="todos">Todos</option>
+        </select>
+      </div>
+
+      <div class="tool-group">
+        <label for="filtroTipo">Tipo de terreno</label>
+        <select id="filtroTipo">
+          <option value="todos">Todos</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="Indicadores de parcelas">
+      <div class="stat-card">
+        <span class="stat-label">Parcelas totales</span>
+        <span id="statTotal" class="stat-value">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Con link oficial</span>
+        <span id="statLink" class="stat-value">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Con KMZ</span>
+        <span id="statKmz" class="stat-value">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Pendientes de link</span>
+        <span id="statPendientes" class="stat-value">0</span>
+      </div>
+    </section>
+
+    <div id="parcelas-container">
+      <div class="table-container">
+        <div class="description">I.1. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 170, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>17656</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>18397</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>3.</td><td>18725</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>4.</td><td>19044</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>5.</td><td>19045</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>6.</td><td>21226</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>7.</td><td>21227</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>8.</td><td>23101</td><td>VIÑEDO (VINOGRAD)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td></td></tr>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div class="description">I.2. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 466, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>15174</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>15548/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>3.</td><td>17960/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>4.</td><td>17965/3</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>5.</td><td>18571/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>6.</td><td>18658</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>7.</td><td>18664/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>8.</td><td>18673</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>9.</td><td>20321</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>10.</td><td>20342/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>11.</td><td>20343/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>12.</td><td>20344/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>13.</td><td>20345/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>14.</td><td>20735/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>15.</td><td>20737/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td></td></tr>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div class="description">I.4. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 553, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>17136/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>17162/2</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>3.</td><td>17382/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>4.</td><td>17383</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>5.</td><td>17513/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>6.</td><td>17515</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>7.</td><td>17745/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>8.</td><td>18472</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>9.</td><td>18603</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>10.</td><td>18973</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>11.</td><td>19156</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td>87</td></tr>
+          <tr><td>12.</td><td>19375</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>13.</td><td>19376</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td>160</td></tr>
+          <tr><td>14.</td><td>19451/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>15.</td><td>19665</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>16.</td><td>19679</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>17.</td><td>19686/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>18.</td><td>19691/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>19.</td><td>19717/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>20.</td><td>19746/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>21.</td><td>19750/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>22.</td><td>19887/1</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>23.</td><td>19948/3</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>24.</td><td>20433</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>25.</td><td>20434</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>26.</td><td>20891</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>27.</td><td>20892</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>28.</td><td>22190/1</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>29.</td><td>22357/2</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td>2446</td></tr>
+          <tr><td>30.</td><td>22357/4</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td>200</td></tr>
+          <tr><td>31.</td><td>23064/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>32.</td><td>23093</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td>2893</td></tr>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div class="description">I.5. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 931, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>219/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>1250/2</td><td>TIERRA ARABLE (ORANICA)</td><td></td><td></td><td></td></tr>
+          <tr><td>3.</td><td>1259/4</td><td>TIERRA ARABLE (ORANICA)</td><td></td><td></td><td></td></tr>
+          <tr><td>4.</td><td>1286</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>5.</td><td>3172/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>6.</td><td>6418/3</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>7.</td><td>7173</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>8.</td><td>7218/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>9.</td><td>7218/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>10.</td><td>9746</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>11.</td><td>9762/5</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>12.</td><td>9784/3</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>13.</td><td>11262/5</td><td>HUERTO (VRT)</td><td></td><td></td><td>340</td></tr>
+          <tr><td>14.</td><td>11342/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>15.</td><td>11373/1</td><td>HUERTO (VRT)</td><td></td><td></td><td>329</td></tr>
+          <tr><td>16.</td><td>13331/17 1</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td>669</td></tr>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div class="description">I.6. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 1217, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>1297/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>1448/2</td><td>TIERRA ARABLE (ORANICA)</td><td></td><td></td><td></td></tr>
+          <tr><td>3.</td><td>1455/2</td><td>TIERRA ARABLE (ORANICA)</td><td></td><td></td><td></td></tr>
+          <tr><td>4.</td><td>1458/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>5.</td><td>10679</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>6.</td><td>10732/3</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>7.</td><td>10741/1</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>8.</td><td>10747</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>9.</td><td>10753/1</td><td>VIÑEDO (VINOGRAD)</td><td></td><td></td><td></td></tr>
+          <tr><td>10.</td><td>10753/3</td><td>VIÑEDO (VINOGRAD)</td><td></td><td></td><td></td></tr>
+          <tr><td>11.</td><td>10784/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>12.</td><td>10786/1</td><td>VIÑEDO (VINOGRAD)</td><td></td><td></td><td></td></tr>
+          <tr><td>13.</td><td>10786/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>14.</td><td>10786/4</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>15.</td><td>10895/1</td><td>VIÑEDO (VINOGRAD)</td><td></td><td></td><td></td></tr>
+          <tr><td>16.</td><td>12477/2</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>17.</td><td>12478/1</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>18.</td><td>12555/43</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>19.</td><td>13331/16 7</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>20.</td><td>13331/17 4</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr><td>21.</td><td>13332/99</td><td>PASTIZAL (PAŠNJAK)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td></td></tr>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div class="description">I.7. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 1219, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>104/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>1232/1</td><td>TIERRA ARABLE (ORANICA)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td></td></tr>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div class="description">I.8. bien inmueble inscrito en el registro de la propiedad (zk. ul.) 1339, municipio catastral (k.o.) Murter Betina, a saber:</div>
+        <table>
+          <tr>
+            <th rowspan="2">N.º</th>
+            <th rowspan="2">Número de terreno<br>(parcela catastral)</th>
+            <th rowspan="2">Designación del terreno</th>
+            <th colspan="3">Superficie</th>
+            <th colspan="2">Acciones</th>
+          </tr>
+          <tr>
+            <th>yugada</th>
+            <th>braza cuad.</th>
+            <th>m²</th>
+            <th>Catastro oficial</th>
+            <th>KMZ</th>
+          </tr>
+          <tr><td>1.</td><td>111/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>2.</td><td>1496/2</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>3.</td><td>4728/2</td><td>TIERRA ARABLE (ORANICA)</td><td></td><td></td><td></td></tr>
+          <tr><td>4.</td><td>10454/3</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr><td>5.</td><td>14967</td><td>HUERTO (VRT)</td><td></td><td></td><td></td></tr>
+          <tr class="total-row"><td colspan="2"></td><td>TOTAL:</td><td></td><td></td><td></td></tr>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="parcelModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">Detalle de parcela</h2>
+        <button type="button" class="modal-close" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="info-grid">
+          <div class="info-row">
+            <div class="info-label">Registro propiedad:</div>
+            <div id="modalZkul" class="info-value"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Parcela:</div>
+            <div id="modalParcela" class="info-value"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Designación:</div>
+            <div id="modalDesignacion" class="info-value"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Superficie:</div>
+            <div id="modalSuperficie" class="info-value"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Link catastro:</div>
+            <div id="modalCatastro" class="info-value"></div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Link KMZ:</div>
+            <div id="modalKmz" class="info-value"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================
+       ENLACES OFICIALES DE PARCELAS
+       Editar solamente esta sección para agregar nuevos links
+       ========================================================== */
+    const enlacesParcelas = {};
+
+    function normalizeWhitespace(value) {
+      return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function getZkulFromDescription(container) {
+      const description = container.querySelector('.description');
+      if (!description) return '';
+      const match = normalizeWhitespace(description.textContent).match(/zk\.\s*ul\.?\s*\)\s*(\d+)/i);
+      return match ? match[1] : '';
+    }
+
+    function buildParcelKey(zkul, parcela) {
+      return `${normalizeWhitespace(zkul)}|${normalizeWhitespace(parcela)}`;
+    }
+
+    function asignarMetadatosFilas() {
+      const tables = document.querySelectorAll('#parcelas-container table');
+      tables.forEach((table) => {
+        const zkul = getZkulFromDescription(table.closest('.table-container'));
+        table.dataset.zkul = zkul;
+        const rows = Array.from(table.querySelectorAll('tr'));
+
+        rows.forEach((row) => {
+          if (row.classList.contains('total-row')) {
+            return;
+          }
+
+          const cells = Array.from(row.children);
+          if (cells.length < 6) {
+            return;
+          }
+
+          const parcelaCell = cells[1];
+          const designacionCell = cells[2];
+          if (!parcelaCell || !designacionCell) {
+            return;
+          }
+
+          const parcela = normalizeWhitespace(parcelaCell.textContent);
+          if (!parcela) {
+            return;
+          }
+
+          const designacion = normalizeWhitespace(designacionCell.textContent);
+          const tipo = designacion.includes('(') ? designacion.split('(')[0].trim() : designacion;
+          const superficie = normalizeWhitespace(cells[5]?.textContent || '');
+
+          row.dataset.zkul = zkul;
+          row.dataset.parcela = parcela;
+          row.dataset.designacion = designacion;
+          row.dataset.tipo = tipo;
+          row.dataset.superficie = superficie;
+          row.dataset.busqueda = `${zkul} ${parcela} ${designacion}`.toLowerCase();
+
+          parcelaCell.classList.add('parcel-cell');
+          if (!parcelaCell.querySelector('button')) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'parcel-button';
+            button.textContent = parcela;
+            button.setAttribute('aria-label', `Ver detalle de la parcela ${parcela}`);
+            button.addEventListener('click', () => abrirModalDetalle(row));
+            parcelaCell.innerHTML = '';
+            parcelaCell.appendChild(button);
+          }
+        });
+      });
+    }
+
+    function generarEntradasVaciasDesdeHTML() {
+      const rows = document.querySelectorAll('#parcelas-container tr[data-parcela]');
+      rows.forEach((row) => {
+        const zkul = normalizeWhitespace(row.dataset.zkul || '');
+        const parcela = normalizeWhitespace(row.dataset.parcela || '');
+        if (!zkul || !parcela) {
+          return;
+        }
+
+        const key = buildParcelKey(zkul, parcela);
+        if (!Object.prototype.hasOwnProperty.call(enlacesParcelas, key)) {
+          enlacesParcelas[key] = {
+            catastro: '',
+            kmz: ''
+          };
+        }
+      });
+    }
+
+    function createActionButton(label, variant, action, disabled = true, title = '') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `action-btn ${variant}`;
+      button.textContent = label;
+      button.disabled = disabled;
+      button.dataset.action = action;
+      if (title) {
+        button.title = title;
+      }
+      return button;
+    }
+
+    function insertarAccionesEnFilas() {
+      const rows = document.querySelectorAll('#parcelas-container tr[data-parcela]');
+      rows.forEach((row) => {
+        if (row.querySelector('.action-cell')) {
+          return;
+        }
+
+        const actionCell = document.createElement('td');
+        actionCell.className = 'action-cell';
+
+        const stack = document.createElement('div');
+        stack.className = 'action-stack';
+
+        const catastroBtn = createActionButton('SIN LINK', 'primary', 'catastro', true, 'Sin enlace oficial');
+        const copyLinkBtn = createActionButton('COPIAR LINK', 'secondary', 'copy-catastro', true, 'Sin enlace para copiar');
+        const kmzBtn = createActionButton('SIN KMZ', 'warning', 'kmz', true, 'Sin KMZ');
+        const copyKmzBtn = createActionButton('COPIAR KMZ', 'secondary', 'copy-kmz', true, 'Sin KMZ para copiar');
+
+        stack.appendChild(catastroBtn);
+        stack.appendChild(copyLinkBtn);
+        stack.appendChild(kmzBtn);
+        stack.appendChild(copyKmzBtn);
+        actionCell.appendChild(stack);
+        row.appendChild(actionCell);
+      });
+    }
+
+    function copiarTexto(texto) {
+      if (!texto) {
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).catch(() => {
+          window.prompt('Copiar enlace', texto);
+        });
+        return;
+      }
+
+      window.prompt('Copiar enlace', texto);
+    }
+
+    function abrirEnlace(url, openWindow = true) {
+      if (!url) {
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+
+      if (openWindow) {
+        link.click();
+        return;
+      }
+
+      const tempWindow = window.open(url, '_blank', 'noopener,noreferrer');
+      if (tempWindow) {
+        tempWindow.opener = null;
+      }
+    }
+
+    function abrirKmz(url) {
+      if (!url) {
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('download', '');
+      document.body.appendChild(link);
+      try {
+        link.click();
+      } catch (error) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+      document.body.removeChild(link);
+    }
+
+    function actualizarEnlacesParcelas() {
+      const rows = document.querySelectorAll('#parcelas-container tr[data-parcela]');
+      rows.forEach((row) => {
+        const zkul = normalizeWhitespace(row.dataset.zkul || '');
+        const parcela = normalizeWhitespace(row.dataset.parcela || '');
+        const key = buildParcelKey(zkul, parcela);
+        const config = enlacesParcelas[key] || { catastro: '', kmz: '' };
+        const catastroUrl = normalizeWhitespace(config.catastro || '');
+        const kmzUrl = normalizeWhitespace(config.kmz || '');
+
+        const catastroBtn = row.querySelector('[data-action="catastro"]');
+        const copyLinkBtn = row.querySelector('[data-action="copy-catastro"]');
+        const kmzBtn = row.querySelector('[data-action="kmz"]');
+        const copyKmzBtn = row.querySelector('[data-action="copy-kmz"]');
+
+        if (catastroBtn) {
+          catastroBtn.disabled = !catastroUrl;
+          catastroBtn.textContent = catastroUrl ? 'VER PARCELA' : 'SIN LINK';
+          catastroBtn.title = catastroUrl || 'Sin enlace oficial';
+          catastroBtn.onclick = catastroUrl ? () => abrirEnlace(catastroUrl, true) : null;
+        }
+
+        if (copyLinkBtn) {
+          copyLinkBtn.disabled = !catastroUrl;
+          copyLinkBtn.title = catastroUrl || 'Sin enlace para copiar';
+          copyLinkBtn.onclick = catastroUrl ? () => copiarTexto(catastroUrl) : null;
+        }
+
+        if (kmzBtn) {
+          kmzBtn.disabled = !kmzUrl;
+          kmzBtn.textContent = kmzUrl ? 'DESCARGAR KMZ' : 'SIN KMZ';
+          kmzBtn.title = kmzUrl || 'Sin KMZ';
+          kmzBtn.onclick = kmzUrl ? () => abrirKmz(kmzUrl) : null;
+        }
+
+        if (copyKmzBtn) {
+          copyKmzBtn.disabled = !kmzUrl;
+          copyKmzBtn.title = kmzUrl || 'Sin KMZ para copiar';
+          copyKmzBtn.onclick = kmzUrl ? () => copiarTexto(kmzUrl) : null;
+        }
+      });
+
+      actualizarEstadisticas();
+    }
+
+    function actualizarEstadisticas() {
+      const rows = document.querySelectorAll('#parcelas-container tr[data-parcela]');
+      const total = rows.length;
+      const conLink = Object.values(enlacesParcelas).filter((item) => normalizeWhitespace(item.catastro || '')).length;
+      const conKmz = Object.values(enlacesParcelas).filter((item) => normalizeWhitespace(item.kmz || '')).length;
+      const pendientes = total - conLink;
+
+      document.getElementById('statTotal').textContent = String(total);
+      document.getElementById('statLink').textContent = String(conLink);
+      document.getElementById('statKmz').textContent = String(conKmz);
+      document.getElementById('statPendientes').textContent = String(pendientes);
+    }
+
+    function poblarFiltros() {
+      const rows = document.querySelectorAll('#parcelas-container tr[data-parcela]');
+      const zkulSet = new Set();
+      const tipoSet = new Set();
+
+      rows.forEach((row) => {
+        const zkul = normalizeWhitespace(row.dataset.zkul || '');
+        const tipo = normalizeWhitespace(row.dataset.tipo || '');
+        if (zkul) {
+          zkulSet.add(zkul);
+        }
+        if (tipo) {
+          tipoSet.add(tipo);
+        }
+      });
+
+      const zkulSelect = document.getElementById('filtroZkul');
+      [...[...zkulSet].sort((a, b) => Number(a) - Number(b))].forEach((zkul) => {
+        const option = document.createElement('option');
+        option.value = zkul;
+        option.textContent = zkul;
+        zkulSelect.appendChild(option);
+      });
+
+      const tipoSelect = document.getElementById('filtroTipo');
+      [...[...tipoSet].sort()].forEach((tipo) => {
+        const option = document.createElement('option');
+        option.value = tipo;
+        option.textContent = tipo;
+        tipoSelect.appendChild(option);
+      });
+    }
+
+    function aplicarFiltros() {
+      const searchInput = document.getElementById('searchInput');
+      const zkulFilter = document.getElementById('filtroZkul');
+      const tipoFilter = document.getElementById('filtroTipo');
+      const searchTerm = normalizeWhitespace(searchInput.value).toLowerCase();
+      const zkulValue = zkulFilter.value;
+      const tipoValue = tipoFilter.value;
+
+      const rows = document.querySelectorAll('#parcelas-container tr[data-parcela]');
+      rows.forEach((row) => {
+        const zkul = normalizeWhitespace(row.dataset.zkul || '');
+        const parcela = normalizeWhitespace(row.dataset.parcela || '');
+        const designacion = normalizeWhitespace(row.dataset.designacion || '');
+        const tipo = normalizeWhitespace(row.dataset.tipo || '');
+
+        const coincideBusqueda = !searchTerm || `${zkul} ${parcela} ${designacion}`.toLowerCase().includes(searchTerm);
+        const coincideZkul = zkulValue === 'todos' || zkul === zkulValue;
+        const coincideTipo = tipoValue === 'todos' || tipo === tipoValue;
+
+        row.style.display = coincideBusqueda && coincideZkul && coincideTipo ? '' : 'none';
+      });
+    }
+
+    function abrirModalDetalle(row) {
+      const modal = document.getElementById('parcelModal');
+      const zkul = normalizeWhitespace(row.dataset.zkul || '');
+      const parcela = normalizeWhitespace(row.dataset.parcela || '');
+      const designacion = normalizeWhitespace(row.dataset.designacion || '');
+      const superficie = normalizeWhitespace(row.dataset.superficie || '');
+      const key = buildParcelKey(zkul, parcela);
+      const config = enlacesParcelas[key] || { catastro: '', kmz: '' };
+
+      document.getElementById('modalZkul').textContent = zkul || '—';
+      document.getElementById('modalParcela').textContent = parcela || '—';
+      document.getElementById('modalDesignacion').textContent = designacion || '—';
+      document.getElementById('modalSuperficie').textContent = superficie || '—';
+
+      const catastroValue = document.getElementById('modalCatastro');
+      const kmzValue = document.getElementById('modalKmz');
+
+      if (config.catastro) {
+        catastroValue.innerHTML = `<a href="${config.catastro}" target="_blank" rel="noopener noreferrer">${config.catastro}</a>`;
+      } else {
+        catastroValue.textContent = 'Sin enlace asignado';
+      }
+
+      if (config.kmz) {
+        kmzValue.innerHTML = `<a href="${config.kmz}" target="_blank" rel="noopener noreferrer">${config.kmz}</a>`;
+      } else {
+        kmzValue.textContent = 'Sin KMZ asignado';
+      }
+
+      modal.classList.add('visible');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarModalDetalle() {
+      const modal = document.getElementById('parcelModal');
+      modal.classList.remove('visible');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function init() {
+      asignarMetadatosFilas();
+      generarEntradasVaciasDesdeHTML();
+      insertarAccionesEnFilas();
+      poblarFiltros();
+      actualizarEnlacesParcelas();
+
+      document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+      document.getElementById('filtroZkul').addEventListener('change', aplicarFiltros);
+      document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
+
+      document.querySelector('.modal-close').addEventListener('click', cerrarModalDetalle);
+      document.getElementById('parcelModal').addEventListener('click', (event) => {
+        if (event.target === event.currentTarget) {
+          cerrarModalDetalle();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          cerrarModalDetalle();
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
