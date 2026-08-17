@@ -295,7 +295,7 @@
           a.href = url;
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
-          a.download = 'parcela.kmz';
+          a.download = url.split('/').pop() || 'parcela.kmz';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
