@@ -49,9 +49,11 @@
     });
 
     Object.keys(local).forEach(function (key) {
+      const localRecord = normalizeLinkRecord(local[key]);
+      const baseRecord = merged[key] || { catastro: '', kmz: '' };
       merged[key] = {
-        ...merged[key],
-        ...normalizeLinkRecord(local[key])
+        catastro: localRecord.catastro || baseRecord.catastro || '',
+        kmz: localRecord.kmz || baseRecord.kmz || ''
       };
     });
 
