@@ -1,0 +1,1 @@
+window.LINKS_PARCELAS = {};
