@@ -347,6 +347,14 @@
     closeConfirmImport();
   }
 
+  function clearLocalOverrides() {
+    const confirmed = window.confirm('Se borrarán los cambios guardados solo en este navegador y se usarán los datos publicados del sitio. ¿Continuar?');
+    if (!confirmed) return;
+    window.MurterStorage.clearLocalLinks();
+    renderTable();
+    window.alert('Configuración local borrada. Ahora se están usando los datos publicados.');
+  }
+
   function handleImportFile(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -388,6 +396,7 @@
 
     document.getElementById('exportJsonBtn')?.addEventListener('click', exportJson);
     document.getElementById('exportJsBtn')?.addEventListener('click', exportJsConfig);
+    document.getElementById('clearLocalBtn')?.addEventListener('click', clearLocalOverrides);
     document.getElementById('importJsonBtn')?.addEventListener('click', function () {
       document.getElementById('importInput').click();
     });
