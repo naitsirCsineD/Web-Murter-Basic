@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrador de enlaces - Catastro Murter Betina</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-row">
+        <div class="brand-block">
+          <p class="eyebrow">Mantenimiento de datos</p>
+          <h1>ADMINISTRADOR DE ENLACES</h1>
+          <p class="subtitle">Catastro Murter Betina</p>
+        </div>
+        <a class="secondary-button header-action" href="index.html">VOLVER AL CATASTRO</a>
+      </div>
+
+      <nav class="navbar" aria-label="Navegación principal">
+        <a class="nav-link" href="index.html">CATASTRO</a>
+        <a class="nav-link active" href="gestionar-links.html">ADMINISTRAR LINKS</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <p class="warning-banner">
+      Los cambios guardados localmente permanecen en este navegador. Para actualizar la versión publicada del sitio, exporte la configuración.
+    </p>
+
+    <section class="admin-actions" aria-label="Importación y exportación">
+      <button id="exportJsonBtn" type="button" class="primary-button">EXPORTAR LINKS</button>
+      <button id="importJsonBtn" type="button" class="secondary-button">IMPORTAR LINKS</button>
+      <button id="exportJsBtn" type="button" class="secondary-button">EXPORTAR CONFIGURACIÓN JS</button>
+      <input id="importInput" class="hidden-file-input" type="file" accept="application/json,.json">
+    </section>
+
+    <section class="admin-stats" aria-label="Indicadores del administrador">
+      <div class="admin-stat">
+        <span class="label">Total parcelas</span>
+        <span id="statTotal" class="value">0</span>
+      </div>
+      <div class="admin-stat">
+        <span class="label">Con link oficial</span>
+        <span id="statOfficial" class="value">0</span>
+      </div>
+      <div class="admin-stat">
+        <span class="label">Con KMZ</span>
+        <span id="statKmz" class="value">0</span>
+      </div>
+      <div class="admin-stat">
+        <span class="label">Completas</span>
+        <span id="statComplete" class="value">0</span>
+      </div>
+      <div class="admin-stat">
+        <span class="label">Pendientes</span>
+        <span id="statPending" class="value">0</span>
+      </div>
+    </section>
+
+    <section class="admin-toolbar" aria-label="Filtros del administrador">
+      <div class="tool-group search-wide">
+        <label for="searchInput">Buscar parcela</label>
+        <input id="searchInput" type="search" placeholder="Ej.: 22357/4, 170, HUERTO" autocomplete="off">
+      </div>
+      <div class="tool-group">
+        <label for="filtroZkul">Registro</label>
+        <select id="filtroZkul">
+          <option value="todos">Todos los ZK. UL.</option>
+        </select>
+      </div>
+      <div class="tool-group">
+        <label for="filtroCatastro">Estado Catastro</label>
+        <select id="filtroCatastro">
+          <option value="todos">Todos</option>
+          <option value="con">Con link</option>
+          <option value="sin">Sin link</option>
+        </select>
+      </div>
+      <div class="tool-group">
+        <label for="filtroKmz">Estado KMZ</label>
+        <select id="filtroKmz">
+          <option value="todos">Todos</option>
+          <option value="con">Con KMZ</option>
+          <option value="sin">Sin KMZ</option>
+        </select>
+      </div>
+      <label class="checkbox-row">
+        <input id="togglePendientes" type="checkbox">
+        <span>MOSTRAR PENDIENTES</span>
+      </label>
+    </section>
+
+    <section class="table-shell" aria-label="Tabla de administración">
+      <div class="table-wrap no-pad">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ZK. UL.</th>
+              <th>Parcela</th>
+              <th>Designación</th>
+              <th>Link oficial</th>
+              <th>KMZ</th>
+              <th>Estado</th>
+              <th>Editar</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="editModal" class="modal" aria-hidden="true">
+    <div class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="modal-header">
+        <h2 id="editModalTitle">Editar enlaces</h2>
+        <button id="modalCloseBtn" type="button" class="modal-close" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="modalRegistro">Registro</label>
+            <input id="modalRegistro" type="text" readonly>
+          </div>
+          <div class="form-field">
+            <label for="modalParcela">Parcela</label>
+            <input id="modalParcela" type="text" readonly>
+          </div>
+          <div class="form-field">
+            <label for="modalDesignacion">Designación</label>
+            <input id="modalDesignacion" type="text" readonly>
+          </div>
+          <div class="form-field">
+            <label for="modalUrlOficial">URL oficial</label>
+            <input id="modalUrlOficial" type="url" placeholder="https://...">
+          </div>
+          <div class="form-field">
+            <label for="modalUrlKmz">URL KMZ</label>
+            <input id="modalUrlKmz" type="url" placeholder="https://...">
+          </div>
+        </div>
+
+        <p id="alertMessage" class="alert-message" role="alert"></p>
+
+        <div class="form-actions between">
+          <div class="form-inline">
+            <button id="btnAnterior" type="button" class="secondary-button">ANTERIOR</button>
+            <button id="btnSiguiente" type="button" class="secondary-button">SIGUIENTE</button>
+            <button id="btnCopiarId" type="button" class="secondary-button">COPIAR ID</button>
+          </div>
+          <div class="form-inline">
+            <button id="btnAbrirLink" type="button" class="secondary-button">ABRIR LINK</button>
+            <button id="btnCopiarLink" type="button" class="secondary-button">COPIAR LINK</button>
+            <button id="btnAbrirKmz" type="button" class="secondary-button">ABRIR KMZ</button>
+            <button id="btnCopiarKmz" type="button" class="secondary-button">COPIAR KMZ</button>
+            <button id="btnCancelar" type="button" class="secondary-button">CANCELAR</button>
+            <button id="btnGuardar" type="button" class="primary-button">GUARDAR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal" aria-hidden="true">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-header">
+        <h2 id="confirmTitle">Confirmar importación</h2>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage">Se sobrescribirá la configuración local actual.</p>
+        <div class="form-actions">
+          <button id="confirmCancel" type="button" class="secondary-button">CANCELAR</button>
+          <button id="confirmAccept" type="button" class="primary-button">IMPORTAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data/parcelas.js"></script>
+  <script src="data/links.config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/gestionar-links.js"></script>
+</body>
+</html>

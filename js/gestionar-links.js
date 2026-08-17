@@ -1,20 +1,47 @@
 (function () {
   const parcelas = window.PARCELAS || {};
   const allParcelas = Object.values(parcelas);
+  let currentRows = [];
+  let currentIndex = -1;
+  let pendingImport = null;
 
-  function normalize(value) {
+  function trimEdges(value) {
+    return String(value || '').trim();
+  }
+
+  function normalizeSearch(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function parcelKey(item) {
+    return `${item.zkul}|${item.parcela}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
   }
 
   function getEffectiveLinks() {
     return window.MurterStorage.getEffectiveLinks();
   }
 
+  function getLinksForItem(item) {
+    return getEffectiveLinks()[parcelKey(item)] || { catastro: '', kmz: '' };
+  }
+
   function getStatus(item) {
-    const key = `${item.zkul}|${item.parcela}`;
-    const link = getEffectiveLinks()[key] || { catastro: '', kmz: '' };
-    const hasCatastro = normalize(link.catastro);
-    const hasKmz = normalize(link.kmz);
+    const link = getLinksForItem(item);
+    const hasCatastro = Boolean(trimEdges(link.catastro));
+    const hasKmz = Boolean(trimEdges(link.kmz));
     if (hasCatastro && hasKmz) return 'Completa';
     if (hasCatastro || hasKmz) return 'Parcial';
     return 'Pendiente';
@@ -26,89 +53,106 @@
     return 'state-pending';
   }
 
-  function writeRows(rows) {
-    const tbody = document.getElementById('adminTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = rows.map(function (item) {
-      const key = `${item.zkul}|${item.parcela}`;
-      const link = getEffectiveLinks()[key] || { catastro: '', kmz: '' };
-      const hasCatastro = normalize(link.catastro);
-      const hasKmz = normalize(link.kmz);
-      const status = getStatus(item);
-
-      return `
-        <tr data-key="${key}">
-          <td>${item.zkul}</td>
-          <td>${item.parcela}</td>
-          <td>${item.designacion}</td>
-          <td>${hasCatastro ? 'Disponible' : 'Pendiente'}</td>
-          <td>${hasKmz ? 'Disponible' : 'Pendiente'}</td>
-          <td><span class="state-pill ${getStateBadge(status)}">${status}</span></td>
-          <td><button type="button" class="primary-button edit-row" data-key="${key}">EDITAR</button></td>
-        </tr>
-      `;
-    }).join('');
-
-    document.querySelectorAll('.edit-row').forEach(function (button) {
-      button.addEventListener('click', function () {
-        const key = button.dataset.key;
-        const item = allParcelas.find(function (entry) {
-          return `${entry.zkul}|${entry.parcela}` === key;
-        });
-        if (item) openEditModal(item);
-      });
-    });
-  }
-
   function getFilteredRows() {
-    const query = normalize(document.getElementById('searchInput')?.value || '');
+    const query = normalizeSearch(document.getElementById('searchInput')?.value || '').toLowerCase();
     const zkulFilter = document.getElementById('filtroZkul')?.value || 'todos';
     const catastroFilter = document.getElementById('filtroCatastro')?.value || 'todos';
     const kmzFilter = document.getElementById('filtroKmz')?.value || 'todos';
     const pendingOnly = document.getElementById('togglePendientes')?.checked || false;
 
     return allParcelas.filter(function (item) {
-      const key = `${item.zkul}|${item.parcela}`;
-      const link = getEffectiveLinks()[key] || { catastro: '', kmz: '' };
-      const matchesQuery = !query || `${item.parcela} ${item.zkul} ${item.designacion}`.toLowerCase().includes(query.toLowerCase());
+      const link = getLinksForItem(item);
+      const hasCatastro = Boolean(trimEdges(link.catastro));
+      const hasKmz = Boolean(trimEdges(link.kmz));
+      const haystack = `${item.parcela} ${item.zkul} ${item.designacion} ${parcelKey(item)}`.toLowerCase();
+
+      const matchesQuery = !query || haystack.includes(query);
       const matchesZkul = zkulFilter === 'todos' || item.zkul === zkulFilter;
       const matchesCatastro = catastroFilter === 'todos' ||
-        (catastroFilter === 'con' && normalize(link.catastro)) ||
-        (catastroFilter === 'sin' && !normalize(link.catastro));
+        (catastroFilter === 'con' && hasCatastro) ||
+        (catastroFilter === 'sin' && !hasCatastro);
       const matchesKmz = kmzFilter === 'todos' ||
-        (kmzFilter === 'con' && normalize(link.kmz)) ||
-        (kmzFilter === 'sin' && !normalize(link.kmz));
-      const matchesPending = !pendingOnly || (!normalize(link.catastro) && !normalize(link.kmz));
+        (kmzFilter === 'con' && hasKmz) ||
+        (kmzFilter === 'sin' && !hasKmz);
+      const matchesPending = !pendingOnly || (!hasCatastro && !hasKmz);
 
       return matchesQuery && matchesZkul && matchesCatastro && matchesKmz && matchesPending;
     });
   }
 
-  function populateFilters() {
-    const zkulSet = [...new Set(allParcelas.map(function (item) { return item.zkul; }))].sort(function (a, b) {
-      return Number(a) - Number(b);
-    });
+  function writeRows(rows) {
+    const tbody = document.getElementById('adminTableBody');
+    if (!tbody) return;
 
-    const zkulSelect = document.getElementById('filtroZkul');
-    zkulSet.forEach(function (zkul) {
-      const option = document.createElement('option');
-      option.value = zkul;
-      option.textContent = zkul;
-      zkulSelect.appendChild(option);
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-row">No hay parcelas para los filtros activos.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(function (item) {
+      const key = parcelKey(item);
+      const link = getLinksForItem(item);
+      const hasCatastro = Boolean(trimEdges(link.catastro));
+      const hasKmz = Boolean(trimEdges(link.kmz));
+      const status = getStatus(item);
+
+      return `
+        <tr data-key="${escapeAttr(key)}">
+          <td>${escapeHtml(item.zkul)}</td>
+          <td>${escapeHtml(item.parcela)}</td>
+          <td>${escapeHtml(item.designacion)}</td>
+          <td>${hasCatastro ? 'Disponible' : 'Pendiente'}</td>
+          <td>${hasKmz ? 'Disponible' : 'Pendiente'}</td>
+          <td><span class="state-pill ${getStateBadge(status)}">${status}</span></td>
+          <td><button type="button" class="primary-button edit-row" data-key="${escapeAttr(key)}">EDITAR</button></td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('.edit-row').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const index = currentRows.findIndex(function (item) {
+          return parcelKey(item) === button.dataset.key;
+        });
+        if (index >= 0) openEditModal(index);
+      });
     });
+  }
+
+  function populateFilters() {
+    const zkulSelect = document.getElementById('filtroZkul');
+    if (!zkulSelect || zkulSelect.dataset.ready === 'true') return;
+
+    [...new Set(allParcelas.map(function (item) { return item.zkul; }))]
+      .sort(function (a, b) { return Number(a) - Number(b); })
+      .forEach(function (zkul) {
+        const option = document.createElement('option');
+        option.value = zkul;
+        option.textContent = zkul;
+        zkulSelect.appendChild(option);
+      });
+
+    zkulSelect.dataset.ready = 'true';
   }
 
   function renderStats() {
     const links = getEffectiveLinks();
+    const knownKeys = new Set(allParcelas.map(parcelKey));
     const total = allParcelas.length;
-    const withOfficial = Object.values(links).filter(function (record) { return normalize(record.catastro); }).length;
-    const withKmz = Object.values(links).filter(function (record) { return normalize(record.kmz); }).length;
-    const complete = allParcelas.filter(function (item) {
-      const key = `${item.zkul}|${item.parcela}`;
-      return normalize(links[key]?.catastro || '') && normalize(links[key]?.kmz || '');
+    const withOfficial = Object.keys(links).filter(function (key) {
+      return knownKeys.has(key) && trimEdges(links[key].catastro);
     }).length;
-    const pending = total - complete;
+    const withKmz = Object.keys(links).filter(function (key) {
+      return knownKeys.has(key) && trimEdges(links[key].kmz);
+    }).length;
+    const complete = allParcelas.filter(function (item) {
+      const link = getLinksForItem(item);
+      return trimEdges(link.catastro) && trimEdges(link.kmz);
+    }).length;
+    const pending = allParcelas.filter(function (item) {
+      const link = getLinksForItem(item);
+      return !trimEdges(link.catastro) && !trimEdges(link.kmz);
+    }).length;
 
     document.getElementById('statTotal').textContent = String(total);
     document.getElementById('statOfficial').textContent = String(withOfficial);
@@ -118,161 +162,248 @@
   }
 
   function renderTable() {
-    const rows = getFilteredRows();
-    writeRows(rows);
+    currentRows = getFilteredRows();
+    writeRows(currentRows);
     renderStats();
   }
 
   function validateUrl(value) {
-    const trimmed = normalize(value);
+    const trimmed = trimEdges(value);
     if (!trimmed) return true;
     return /^https?:\/\//i.test(trimmed);
   }
 
-  function openEditModal(item) {
-    const key = `${item.zkul}|${item.parcela}`;
-    const links = getEffectiveLinks();
-    const current = links[key] || { catastro: '', kmz: '' };
+  function setAlert(message) {
+    const alertBox = document.getElementById('alertMessage');
+    if (alertBox) alertBox.textContent = message || '';
+  }
+
+  function openEditModal(index) {
+    const item = currentRows[index];
+    if (!item) return;
+
+    currentIndex = index;
+    const key = parcelKey(item);
+    const current = getLinksForItem(item);
     const modal = document.getElementById('editModal');
     modal.dataset.key = key;
+    modal.setAttribute('aria-hidden', 'false');
+
     document.getElementById('modalRegistro').value = item.zkul;
     document.getElementById('modalParcela').value = item.parcela;
     document.getElementById('modalDesignacion').value = item.designacion;
     document.getElementById('modalUrlOficial').value = current.catastro || '';
     document.getElementById('modalUrlKmz').value = current.kmz || '';
-
-    document.getElementById('btnAbrirLink').disabled = !normalize(current.catastro);
-    document.getElementById('btnAbrirKmz').disabled = !normalize(current.kmz);
     document.getElementById('btnCopiarId').dataset.copyValue = key;
-
+    setAlert('');
+    updateModalButtons();
     modal.classList.add('visible');
+  }
+
+  function updateModalButtons() {
+    const key = document.getElementById('editModal')?.dataset.key || '';
+    const links = getEffectiveLinks()[key] || { catastro: '', kmz: '' };
+    const hasCatastro = Boolean(trimEdges(links.catastro));
+    const hasKmz = Boolean(trimEdges(links.kmz));
+
+    document.getElementById('btnAbrirLink').disabled = !hasCatastro;
+    document.getElementById('btnCopiarLink').disabled = !hasCatastro;
+    document.getElementById('btnAbrirKmz').disabled = !hasKmz;
+    document.getElementById('btnCopiarKmz').disabled = !hasKmz;
+    document.getElementById('btnAnterior').disabled = currentIndex <= 0;
+    document.getElementById('btnSiguiente').disabled = currentIndex >= currentRows.length - 1;
   }
 
   function closeModal() {
     const modal = document.getElementById('editModal');
     modal.classList.remove('visible');
-    document.getElementById('alertMessage').textContent = '';
+    modal.setAttribute('aria-hidden', 'true');
+    currentIndex = -1;
+    setAlert('');
   }
 
-  function saveCurrentItem() {
+  function saveCurrentItem(options) {
+    const shouldStayOpen = options && options.stayOpen;
     const modal = document.getElementById('editModal');
     const key = modal.dataset.key;
-    const official = normalize(document.getElementById('modalUrlOficial').value);
-    const kmz = normalize(document.getElementById('modalUrlKmz').value);
-    const alertBox = document.getElementById('alertMessage');
+    const official = trimEdges(document.getElementById('modalUrlOficial').value);
+    const kmz = trimEdges(document.getElementById('modalUrlKmz').value);
 
     if (official && !validateUrl(official)) {
-      alertBox.textContent = 'La URL oficial no parece válida. Debe comenzar por http:// o https://';
-      return;
+      setAlert('La URL oficial no parece válida. Debe comenzar por http:// o https://. Puede corregirla o cancelar.');
+      return false;
     }
 
     if (kmz && !validateUrl(kmz)) {
-      alertBox.textContent = 'La URL de KMZ no parece válida. Debe comenzar por http:// o https://';
-      return;
+      setAlert('La URL de KMZ no parece válida. Debe comenzar por http:// o https://. Puede corregirla o cancelar.');
+      return false;
     }
 
-    const current = window.MurterStorage.getEffectiveLinks();
-    current[key] = { catastro: official, kmz: kmz };
-    window.MurterStorage.saveLocalLinks(current);
+    const localLinks = window.MurterStorage.readLocalLinks();
+    localLinks[key] = { catastro: official, kmz: kmz };
+    window.MurterStorage.saveLocalLinks(localLinks);
     renderTable();
-    closeModal();
+
+    if (!shouldStayOpen) {
+      closeModal();
+    } else {
+      updateModalButtons();
+      setAlert('Guardado localmente en este navegador.');
+    }
+    return true;
   }
 
-  function exportJson(filename, data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  function moveModal(delta) {
+    const oldIndex = currentIndex;
+    const saved = saveCurrentItem({ stayOpen: true });
+    if (!saved) return;
+
+    const nextIndex = delta > 0 ? Math.min(oldIndex, currentRows.length - 1) : Math.max(oldIndex - 1, 0);
+    if (nextIndex < 0 || nextIndex >= currentRows.length) return;
+    openEditModal(nextIndex);
+  }
+
+  function openCurrentUrl(kind) {
+    const key = document.getElementById('editModal').dataset.key;
+    const value = getEffectiveLinks()[key]?.[kind] || '';
+    if (value) window.open(value, '_blank', 'noopener,noreferrer');
+  }
+
+  function copyText(value, label) {
+    if (!value) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).catch(function () {
+        window.prompt(label, value);
+      });
+      return;
+    }
+    window.prompt(label, value);
+  }
+
+  function copyCurrentUrl(kind, label) {
+    const key = document.getElementById('editModal').dataset.key;
+    const value = getEffectiveLinks()[key]?.[kind] || '';
+    copyText(value, label);
+  }
+
+  function downloadText(filename, content, type) {
+    const blob = new Blob([content], { type: type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
+  function exportJson() {
+    downloadText('links.json', JSON.stringify(getEffectiveLinks(), null, 2), 'application/json');
+  }
+
   function exportJsConfig() {
-    const links = window.MurterStorage.getEffectiveLinks();
-    const content = 'window.LINKS_PARCELAS = ' + JSON.stringify(links, null, 2) + ';\n';
-    const blob = new Blob([content], { type: 'application/javascript' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'links.config.js';
-    a.click();
-    URL.revokeObjectURL(url);
+    const content = 'window.LINKS_PARCELAS = ' + JSON.stringify(getEffectiveLinks(), null, 2) + ';\n';
+    downloadText('links.config.js', content, 'application/javascript');
+  }
+
+  function normalizeImportedLinks(parsed) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('El JSON debe ser un objeto.');
+    }
+
+    const next = {};
+    Object.keys(parsed).forEach(function (key) {
+      const value = parsed[key] || {};
+      next[key] = {
+        catastro: typeof value.catastro === 'string' ? value.catastro.trim() : '',
+        kmz: typeof value.kmz === 'string' ? value.kmz.trim() : ''
+      };
+    });
+    return next;
+  }
+
+  function openConfirmImport(next) {
+    pendingImport = next;
+    const modal = document.getElementById('confirmModal');
+    const localCount = Object.keys(window.MurterStorage.readLocalLinks()).length;
+    document.getElementById('confirmMessage').textContent =
+      `Se importarán ${Object.keys(next).length} registros y se sobrescribirá la configuración local actual (${localCount} registros).`;
+    modal.classList.add('visible');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeConfirmImport() {
+    pendingImport = null;
+    const modal = document.getElementById('confirmModal');
+    modal.classList.remove('visible');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function acceptImport() {
+    if (!pendingImport) return;
+    window.MurterStorage.saveLocalLinks(pendingImport);
+    renderTable();
+    closeConfirmImport();
   }
 
   function handleImportFile(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = function () {
       try {
         const parsed = JSON.parse(String(reader.result || '{}'));
-        const next = {};
-        Object.keys(parsed).forEach(function (key) {
-          next[key] = {
-            catastro: normalize(parsed[key] && parsed[key].catastro ? parsed[key].catastro : ''),
-            kmz: normalize(parsed[key] && parsed[key].kmz ? parsed[key].kmz : '')
-          };
-        });
-
-        const confirmOverwrite = window.confirm('Se sobrescribirá la configuración local actual. ¿Continuar?');
-        if (!confirmOverwrite) return;
-
-        window.MurterStorage.saveLocalLinks(next);
-        renderTable();
+        openConfirmImport(normalizeImportedLinks(parsed));
       } catch (error) {
         window.alert('El archivo no es un JSON válido.');
+      } finally {
+        event.target.value = '';
       }
     };
     reader.readAsText(file);
   }
 
-  function init() {
-    populateFilters();
-    renderTable();
-
+  function bindEvents() {
     document.getElementById('searchInput')?.addEventListener('input', renderTable);
     document.getElementById('filtroZkul')?.addEventListener('change', renderTable);
     document.getElementById('filtroCatastro')?.addEventListener('change', renderTable);
     document.getElementById('filtroKmz')?.addEventListener('change', renderTable);
     document.getElementById('togglePendientes')?.addEventListener('change', renderTable);
 
-    document.getElementById('btnGuardar')?.addEventListener('click', saveCurrentItem);
+    document.getElementById('btnGuardar')?.addEventListener('click', function () { saveCurrentItem(); });
     document.getElementById('btnCancelar')?.addEventListener('click', closeModal);
-    document.getElementById('btnAbrirLink')?.addEventListener('click', function () {
-      const key = document.getElementById('editModal').dataset.key;
-      const value = window.MurterStorage.getEffectiveLinks()[key]?.catastro || '';
-      if (value) window.open(value, '_blank', 'noopener,noreferrer');
-    });
-    document.getElementById('btnAbrirKmz')?.addEventListener('click', function () {
-      const key = document.getElementById('editModal').dataset.key;
-      const value = window.MurterStorage.getEffectiveLinks()[key]?.kmz || '';
-      if (value) window.open(value, '_blank', 'noopener,noreferrer');
-    });
+    document.getElementById('modalCloseBtn')?.addEventListener('click', closeModal);
+    document.getElementById('btnAnterior')?.addEventListener('click', function () { moveModal(-1); });
+    document.getElementById('btnSiguiente')?.addEventListener('click', function () { moveModal(1); });
+
+    document.getElementById('btnAbrirLink')?.addEventListener('click', function () { openCurrentUrl('catastro'); });
+    document.getElementById('btnAbrirKmz')?.addEventListener('click', function () { openCurrentUrl('kmz'); });
+    document.getElementById('btnCopiarLink')?.addEventListener('click', function () { copyCurrentUrl('catastro', 'Copiar link oficial'); });
+    document.getElementById('btnCopiarKmz')?.addEventListener('click', function () { copyCurrentUrl('kmz', 'Copiar KMZ'); });
     document.getElementById('btnCopiarId')?.addEventListener('click', function () {
-      const value = this.dataset.copyValue || '';
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(value).catch(function () {
-          window.prompt('Copiar ID', value);
-        });
-      } else {
-        window.prompt('Copiar ID', value);
-      }
+      copyText(this.dataset.copyValue || '', 'Copiar ID');
     });
 
-    document.getElementById('exportJsonBtn')?.addEventListener('click', function () {
-      exportJson('links.json', window.MurterStorage.getEffectiveLinks());
-    });
-
+    document.getElementById('exportJsonBtn')?.addEventListener('click', exportJson);
     document.getElementById('exportJsBtn')?.addEventListener('click', exportJsConfig);
     document.getElementById('importJsonBtn')?.addEventListener('click', function () {
       document.getElementById('importInput').click();
     });
     document.getElementById('importInput')?.addEventListener('change', handleImportFile);
 
+    document.getElementById('confirmCancel')?.addEventListener('click', closeConfirmImport);
+    document.getElementById('confirmAccept')?.addEventListener('click', acceptImport);
     document.getElementById('editModal')?.addEventListener('click', function (event) {
       if (event.target === this) closeModal();
     });
+  }
+
+  function init() {
+    populateFilters();
+    renderTable();
+    bindEvents();
   }
 
   if (document.readyState === 'loading') {
