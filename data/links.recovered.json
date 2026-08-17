@@ -1,4 +1,4 @@
-window.LINKS_PARCELAS = {
+{
   "1217|12555/43": {
     "catastro": "https://oss.uredjenazemlja.hr/map?center=425544.08,4854381.380000001&zoom=19&layers=DOF5_2023_2024,DKP_CESTICE,DKP_KATASTARSKE_OPCINE,zupanija,ulica,kucni_broj",
     "kmz": ""
@@ -287,4 +287,4 @@ window.LINKS_PARCELAS = {
     "catastro": "https://oss.uredjenazemlja.hr/map?center=429179.655,4856902.9350000005&zoom=19&layers=DOF5_2023_2024,DKP_CESTICE,DKP_KATASTARSKE_OPCINE,zupanija,ulica,kucni_broj",
     "kmz": ""
   }
-};
+}
